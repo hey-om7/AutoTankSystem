@@ -9,35 +9,42 @@ const char *ipServer = "52.66.6.129";
 
 WiFiClient client;
 
-// ---------- EEPROM ----------
-void writeStringToEEPROM(int addr, const String &data) {
-  byte len = data.length();
-  EEPROM.write(addr++, len);
-  for (byte i = 0; i < len; i++) {
-    EEPROM.write(addr++, data[i]);
+void connectToWifi() {
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("\nConnecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
   }
+  Serial.println("\nConnected!");
 }
 
+// ---------- EEPROM ----------
 void saveVersionToEEPROM(const String &version) {
+  int addr = VERSION_EEPROM_ADDR;
   Serial.println("Saving version on EEPROM: " + version);
-  writeStringToEEPROM(VERSION_EEPROM_ADDR, version);
+  byte len = version.length();
+  EEPROM.write(addr++, len);
+  for (byte i = 0; i < len; i++) {
+    EEPROM.write(addr++, version[i]);
+  }
+  // Commit changes to EEPROM
   EEPROM.commit();
 }
 
-String readStringFromEEPROM(int addr) {
+void loadVersionFromEEPROM() {
+  int addr = VERSION_EEPROM_ADDR;
   byte len = EEPROM.read(addr++);
   String value = "";
   for (byte i = 0; i < len; i++) {
     value += (char)EEPROM.read(addr++);
   }
-  return value;
-}
-
-void loadVersionFromEEPROM() {
-  CURRENT_VERSION = readStringFromEEPROM(VERSION_EEPROM_ADDR);
-  if (CURRENT_VERSION.length() == 0 || CURRENT_VERSION.length() > 20) {
-    CURRENT_VERSION = "0.0.0";  // default if not stored yet
+  if (value.length() == 0 || value.length() > 20) {
+    CURRENT_VERSION = "0.0.0";  // default if nothing valid is stored
+  } else {
+    CURRENT_VERSION = value;
   }
+  Serial.println("Loaded version from EEPROM: " + CURRENT_VERSION);
 }
 
 // ---------- Version Comparison ----------
@@ -56,12 +63,18 @@ bool isVersionNewer(String current, String latest) {
 }
 
 // ---------- OTA Check ----------
-void checkForOTAUpdate() {
+
+
+void checkForOTAandUpdate() {
   EEPROM.begin(EEPROM_SIZE);
+
+  // ---------- Prepare URLs ----------
   String macAddress = WiFi.macAddress();
   firmwareBinUrl = "http://" + String(ipServer) + ":8080/api/v1/device/firmware?macAddress=" + macAddress;
   versionCheckUrl = "http://" + String(ipServer) + ":8080/api/v1/device/firmware/version?macAddress=" + macAddress;
   Serial.println("Mac address: " + macAddress);
+
+
   loadVersionFromEEPROM();
   
   WiFiClient client;
