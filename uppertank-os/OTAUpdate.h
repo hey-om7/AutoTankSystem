@@ -6,10 +6,6 @@
 #include <ESP8266HTTPClient.h>
 #include <ESP8266httpUpdate.h>
 
-// #include <WiFi.h>
-// #include <HTTPClient.h>
-// #include <HTTPUpdate.h>
-
 #define WIFI_SSID "AMBARKAR"
 #define WIFI_PASSWORD "chikki123"
 #define EEPROM_SIZE 128
